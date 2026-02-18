@@ -40,13 +40,13 @@ const Transactions: React.FC = () => {
     }
 
     // saldo
-    fetch(`http://localhost:3000/api/user/${userId}`)
+    fetch(`https://faithful-renewal-production.up.railway.app/api/user/${userId}`)
       .then(res => res.json())
       .then(data => setBalance(data.balance || 0))
       .catch(() => setBalance(0));
 
     // cartão
-    fetch(`http://localhost:3000/api/card/${userId}`)
+    fetch(`https://faithful-renewal-production.up.railway.app/api/card/${userId}`)
       .then(res => {
         if (!res.ok) throw new Error('Cartão não encontrado');
         return res.json();
@@ -56,7 +56,7 @@ const Transactions: React.FC = () => {
         setLoading(false);
       })
       .catch(() => {
-        fetch('http://localhost:3000/api/generate-card', {
+        fetch('https://faithful-renewal-production.up.railway.app/api/generate-card', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId })
@@ -70,7 +70,7 @@ const Transactions: React.FC = () => {
       });
 
     // transações
-    fetch(`http://localhost:3000/api/transactions/${userId}`)
+    fetch(`https://faithful-renewal-production.up.railway.app/api/transactions/${userId}`)
       .then(res => res.json())
       .then(data => {
         // garante que seja sempre um array
@@ -109,7 +109,7 @@ const Transactions: React.FC = () => {
     if (!userId) return;
 
     try {
-      const res = await fetch(`http://localhost:3000/api/respawn/${userId}`, {
+      const res = await fetch(`https://faithful-renewal-production.up.railway.app/api/respawn/${userId}`, {
         method: 'POST'
       });
 

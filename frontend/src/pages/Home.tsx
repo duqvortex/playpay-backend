@@ -33,7 +33,7 @@ const Home: React.FC = () => {
 
     try {
       const res = await axios.get(
-        `http://localhost:3000/api/user/${userId}`
+        `https://faithful-renewal-production.up.railway.app/api/user/${userId}`
       );
 
       const rawBalance = Number(res.data?.balance);
@@ -61,7 +61,7 @@ const Home: React.FC = () => {
 
     try {
       const res = await axios.post(
-        'http://localhost:3000/api/deposit',
+        'https://faithful-renewal-production.up.railway.app/api/deposit',
         {
           userId,
           amount: Number(amount),

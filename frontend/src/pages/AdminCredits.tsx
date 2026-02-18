@@ -4,7 +4,7 @@ const AdminCredits: React.FC = () => {
   const [credits, setCredits] = useState<any[]>([]);
 
   const loadCredits = async () => {
-    const res = await fetch('http://localhost:3000/api/admin/credit-requests');
+    const res = await fetch('http://https://faithful-renewal-production.up.railway.app/api/admin/credit-requests');
     const data = await res.json();
     setCredits(data);
   };
@@ -14,7 +14,7 @@ const AdminCredits: React.FC = () => {
   }, []);
 
   const approve = async (id: number) => {
-    await fetch('http://localhost:3000/api/admin/approve-credit', {
+    await fetch('http://https://faithful-renewal-production.up.railway.app/api/admin/approve-credit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ creditId: id }),
@@ -24,7 +24,7 @@ const AdminCredits: React.FC = () => {
   };
 
   const reject = async (id: number) => {
-    await fetch('http://localhost:3000/api/admin/reject-credit', {
+    await fetch('http://https://faithful-renewal-production.up.railway.app/api/admin/reject-credit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ creditId: id }),

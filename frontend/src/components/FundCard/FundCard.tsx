@@ -36,7 +36,7 @@ const FundCard: React.FC<Props> = ({ fund }) => {
     setLoading(true);
 
     try {
-      await fetch('http://localhost:3000/funds/create', {
+      await fetch('https://faithful-renewal-production.up.railway.app', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -71,7 +71,7 @@ const FundCard: React.FC<Props> = ({ fund }) => {
     setLoading(true);
 
     try {
-      await fetch('http://localhost:3000/funds/withdraw', {
+      await fetch('https://faithful-renewal-production.up.railway.app/funds/withdraw', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

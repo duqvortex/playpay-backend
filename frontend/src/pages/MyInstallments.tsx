@@ -6,7 +6,7 @@ const MyInstallments: React.FC = () => {
   useEffect(() => {
     const userId = localStorage.getItem('userId');
 
-    fetch(`http://localhost:3000/api/my-installments/${userId}`)
+    fetch(`https://faithful-renewal-production.up.railway.app/api/my-installments/${userId}`)
       .then(res => res.json())
       .then(setData);
   }, []);

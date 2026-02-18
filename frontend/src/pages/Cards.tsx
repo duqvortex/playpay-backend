@@ -25,7 +25,7 @@ const Cards: React.FC = () => {
       if (!userId) return;
 
       try {
-        const res = await fetch(`http://localhost:3000/funds/${userId}`);
+        const res = await fetch(`https://faithful-renewal-production.up.railway.app/funds/${userId}`);
         const data = await res.json();
 
         if (Array.isArray(data)) {

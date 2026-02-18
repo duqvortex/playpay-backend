@@ -4,7 +4,7 @@ const AdminDashboard: React.FC = () => {
   const [users, setUsers] = useState<any[]>([]);
 
   const load = async () => {
-    const res = await fetch('http://localhost:3000/api/admin/users');
+    const res = await fetch('https://faithful-renewal-production.up.railway.app/api/admin/users');
     const data = await res.json();
     setUsers(data);
   };

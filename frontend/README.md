@@ -73,7 +73,9 @@ If you like this resource, please follow me on GitHub. Thank you!
 
 ## Usage
 
-Once the application is started, navigate to [http://localhost:3000](http://localhost:3000) in your browser to test application.
+Once the application is started, navigate to [https://faithful-renewal-production.up.railway.app
+](https://faithful-renewal-production.up.railway.app
+) in your browser to test application.
 
 ## Contributing
 

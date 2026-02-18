@@ -36,7 +36,7 @@ const handleRequest = async () => {
   }
 
   try {
-    const response = await fetch('http://localhost:3000/api/credit-request', {
+    const response = await fetch('https://faithful-renewal-production.up.railway.app/api/credit-request', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
