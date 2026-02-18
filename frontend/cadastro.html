@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Cadastro - PlayPay</title>
+</head>
+<body>
+  <h2>Cadastro</h2>
+
+  <form id="registerForm">
+    <input type="text" id="name" placeholder="Nome" required />
+    <br><br>
+    <input type="email" id="email" placeholder="Email" required />
+    <br><br>
+    <input type="password" id="password" placeholder="Senha" required />
+    <br><br>
+    <button type="submit">Cadastrar</button>
+  </form>
+
+  <p id="msg"></p>
+
+  <script>
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const name = document.getElementById('name').value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      const res = await fetch('http://localhost:3000/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name, email, password })
+      });
+
+      const data = await res.json();
+      document.getElementById('msg').innerText = data.message || data.error;
+
+      if (res.ok) {
+        setTimeout(() => {
+          window.location.href = 'login.html';
+        }, 1500);
+      }
+    });
+  </script>
+</body>
+</html>

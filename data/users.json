@@ -1,0 +1,32 @@
+[
+  {
+    "id": "b7c28164-c422-4ba8-a349-87ce118971f6",
+    "name": "doren",
+    "email": "dorenbuckdafo@gmail.com",
+    "password": "batata",
+    "balance": 0,
+    "history": []
+  },
+  {
+    "id": "4786b955-58ea-40ce-ab1e-76643e977651",
+    "name": "Teste",
+    "email": "teste@playpay.com",
+    "password": "123456",
+    "balance": 100,
+    "history": [
+      {
+        "id": "39679af1-cc6c-4739-a8d4-b2a19ccca9a7",
+        "type": "deposit",
+        "amount": 100,
+        "date": "2026-02-11T23:17:54.751Z"
+      }
+    ],
+    "card": {
+      "number": "5100 8282 5191 7789",
+      "name": "TESTE",
+      "expiry": "12/30",
+      "cvv": 421,
+      "createdAt": "2026-02-11T23:32:37.824Z"
+    }
+  }
+]

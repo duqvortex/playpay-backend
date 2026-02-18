@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>PlayPay</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      color: white;
+      text-align: center;
+    }
+
+    .container {
+      background: rgba(0,0,0,0.4);
+      padding: 40px;
+      border-radius: 15px;
+      width: 300px;
+    }
+
+    img {
+      width: 80px;
+      margin-bottom: 15px;
+    }
+
+    h1 {
+      margin: 10px 0;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 12px 25px;
+      font-size: 18px;
+      border: none;
+      border-radius: 8px;
+      background: #00c6ff;
+      color: black;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #00a2d6;
+    }
+  </style>
+  <link rel="manifest" href="/manifest.json" />
+<meta name="theme-color" content="#0f172a" />
+
+</head>
+<body>
+  <div class="container">
+    <img src="icon.png" alt="Logo" />
+    <h1>PlayPay</h1>
+    <p>Sua carteira digital</p>
+    <button onclick="startApp()">START</button>
+  </div>
+
+  <script>
+    function startApp() {
+      window.location.href = "/login.html";
+    }
+  </script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js')
+      .then(() => console.log('Service Worker registrado'));
+  }
+</script>
+
+</body>
+</html>

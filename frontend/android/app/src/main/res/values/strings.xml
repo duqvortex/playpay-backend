@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Playpay</string>
+    <string name="title_activity_main">Playpay</string>
+    <string name="package_name">com.playpay.app</string>
+    <string name="custom_url_scheme">com.playpay.app</string>
+</resources>

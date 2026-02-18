@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Painel Admin - PlayPay</title>
+</head>
+<body>
+
+<h2>Saques PIX</h2>
+
+<button onclick="loadWithdrawals()">Atualizar</button>
+
+<table border="1" cellpadding="10">
+  <thead>
+    <tr>
+      <th>Usuário</th>
+      <th>Email</th>
+      <th>Valor</th>
+      <th>Chave PIX</th>
+      <th>Status</th>
+      <th>Ação</th>
+    </tr>
+  </thead>
+  <tbody id="withdrawTable"></tbody>
+</table>
+
+<script>
+
+async function loadWithdrawals() {
+  const response = await fetch('http://localhost:3000/api/admin/withdrawals');
+  const data = await response.json();
+
+  const table = document.getElementById('withdrawTable');
+  table.innerHTML = '';
+
+  data.forEach(tx => {
+    table.innerHTML += `
+      <tr>
+        <td>${tx.name}</td>
+        <td>${tx.email}</td>
+        <td>R$ ${tx.amount}</td>
+        <td>${tx.pix_key}</td>
+        <td>${tx.status}</td>
+        <td>
+          ${tx.status === 'pending' ? `
+            <button onclick="approve('${tx.id}')">Aprovar</button>
+            <button onclick="reject('${tx.id}')">Rejeitar</button>
+          ` : '—'}
+        </td>
+      </tr>
+    `;
+  });
+}
+
+async function approve(id) {
+  await fetch('http://localhost:3000/api/admin/approve', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ transactionId: id })
+  });
+
+  loadWithdrawals();
+}
+
+async function reject(id) {
+  await fetch('http://localhost:3000/api/admin/reject', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ transactionId: id })
+  });
+
+  loadWithdrawals();
+}
+
+loadWithdrawals();
+
+</script>
+
+</body>
+</html>

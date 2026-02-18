@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Gamer - PlayPay</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+    * { margin:0; padding:0; box-sizing:border-box; font-family: 'Press Start 2P', cursive; }
+    body { background:#121212; color:#fff; display:flex; min-height:100vh; }
+
+    /* ===== MENU LATERAL ===== */
+    .sidebar {
+        width:200px;
+        background:#1b1b1b;
+        display:flex;
+        flex-direction:column;
+        padding:20px;
+        border-right:3px solid #ff6600;
+        animation: slideIn 0.5s ease forwards;
+    }
+    .sidebar h2 { color:#ff6600; margin-bottom:30px; text-align:center; font-size:16px; }
+    .menu-item {
+        padding:12px 10px;
+        margin-bottom:12px;
+        cursor:pointer;
+        display:flex;
+        align-items:center;
+        border-radius:8px;
+        transition:0.3s;
+    }
+    .menu-item:hover { background:#ff660055; }
+    .menu-item i {
+        margin-right:8px;
+        font-size:18px;
+        color:#ff6600;
+    }
+
+    /* ===== CONTEÚDO PRINCIPAL ===== */
+    .main {
+        flex:1;
+        padding:20px;
+        overflow-y:auto;
+        display:flex;
+        flex-wrap: wrap;
+        gap:20px;
+        position: relative;
+    }
+
+    /* ===== CARDS FLUTUANTES ===== */
+    .card {
+        background:#1b1b1b;
+        border:2px solid #ff6600;
+        border-radius:12px;
+        padding:20px;
+        min-width:250px;
+        max-width:350px;
+        position: relative;
+        overflow:hidden;
+        transition:0.3s;
+        box-shadow:0 4px 8px #00000055;
+    }
+    .card:hover { transform:translateY(-5px); box-shadow:0 8px 20px #ff6600aa; }
+    .card h3 { margin-bottom:10px; font-size:14px; color:#ff9900; }
+    .card p { font-size:12px; line-height:1.4; }
+
+    /* ===== BARRAS DE XP ===== */
+    .xp-bar {
+        background:#333;
+        border-radius:20px;
+        overflow:hidden;
+        margin-top:10px;
+        height:12px;
+    }
+    .xp-fill {
+        background:#ff6600;
+        height:100%;
+        width:0;
+        border-radius:20px;
+        animation: fillXP 2s forwards;
+    }
+
+    /* ===== MOEDAS ANIMADAS ===== */
+    .coin {
+        position:absolute;
+        top:-10px; right:-10px;
+        width:30px; height:30px;
+        background:gold;
+        border-radius:50%;
+        display:flex; align-items:center; justify-content:center;
+        font-size:16px;
+        color:#fff;
+        animation: spin 2s linear infinite;
+    }
+
+    /* ===== ANIMAÇÕES ===== */
+    @keyframes spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
+    @keyframes fillXP { 0%{width:0;} 100%{width:75%;} }
+    @keyframes slideIn { 0%{transform:translateX(-100%);} 100%{transform:translateX(0);} }
+
+</style>
+<script src="https://kit.fontawesome.com/yourkit.js" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<!-- MENU LATERAL -->
+<div class="sidebar">
+    <h2>PlayPay</h2>
+    <div class="menu-item"><i class="fas fa-wallet"></i>Saldo</div>
+    <div class="menu-item"><i class="fas fa-paper-plane"></i>Enviar</div>
+    <div class="menu-item"><i class="fas fa-download"></i>Receber</div>
+    <div class="menu-item"><i class="fas fa-history"></i>Histórico</div>
+    <div class="menu-item"><i class="fas fa-cog"></i>Configurações</div>
+</div>
+
+<!-- CONTEÚDO PRINCIPAL -->
+<div class="main">
+    <!-- CARD SALDO -->
+    <div class="card">
+        <div class="coin">💰</div>
+        <h3>Saldo Total</h3>
+        <p>R$ 3.500,00</p>
+        <div class="xp-bar">
+            <div class="xp-fill"></div>
+        </div>
+    </div>
+
+    <!-- CARD ENVIAR -->
+    <div class="card">
+        <h3>Enviar Dinheiro</h3>
+        <p>R$ 500,00 disponíveis</p>
+    </div>
+
+    <!-- CARD RECEBER -->
+    <div class="card">
+        <h3>Receber Dinheiro</h3>
+        <p>Clique para gerar link</p>
+    </div>
+
+    <!-- CARD HISTÓRICO -->
+    <div class="card">
+        <h3>Últimas Transações</h3>
+        <p>Compra RPG: R$150</p>
+        <p>Venda Item: R$200</p>
+        <p>XP Atual: 75%</p>
+        <div class="xp-bar">
+            <div class="xp-fill"></div>
+        </div>
+    </div>
+
+    <!-- CARD LOOT/RECOMPENSA -->
+    <div class="card">
+        <h3>Recompensa do Dia</h3>
+        <p>💎 50 Gemas adicionadas ao saldo</p>
+        <div class="xp-bar">
+            <div class="xp-fill"></div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
