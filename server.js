@@ -184,8 +184,6 @@ app.use((err, req, res, next) => {
    INICIAR SERVIDOR
 ================================ */
 
-const PORT = process.env.PORT || 3000;
-
 async function createTables() {
   try {
     await pool.query(`
@@ -210,6 +208,8 @@ async function createTables() {
     console.error('Erro ao criar tabelas:', err);
   }
 }
+
+const PORT = process.env.PORT || 3000;
 
 createTables().then(() => {
   app.listen(PORT, () => {
