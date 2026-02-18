@@ -53,7 +53,7 @@ app.post('/create-user', async (req, res) => {
     );
 
     const account = await pool.query(
-      'INSERT INTO accounts (user_id) VALUES ($1) RETURNING *',
+      'INSERT INTO accounts (user_id, balance) VALUES ($1, 0) RETURNING *',
       [user.rows[0].id]
     );
 
@@ -68,6 +68,7 @@ app.post('/create-user', async (req, res) => {
   }
 });
 
+
 /* ================================
    CONSULTAR SALDO
 ================================ */
@@ -81,11 +82,19 @@ app.get('/balance/:userId', async (req, res) => {
       [userId]
     );
 
-    res.json(result.rows[0]);
+    // Se não existir conta, retorna saldo 0
+    if (result.rows.length === 0) {
+      return res.json({ balance: 0 });
+    }
+
+    res.json({ balance: result.rows[0].balance });
+
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Erro ao buscar saldo' });
   }
 });
+
 
 /* ================================
    TRANSFERÊNCIA INTERNA
