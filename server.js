@@ -186,6 +186,34 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log(`🚀 PlayPay backend rodando na porta ${PORT}`);
+async function createTables() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        name TEXT,
+        email TEXT UNIQUE,
+        password TEXT
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS accounts (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id),
+        balance NUMERIC DEFAULT 0
+      );
+    `);
+
+    console.log('Tabelas verificadas/criadas');
+  } catch (err) {
+    console.error('Erro ao criar tabelas:', err);
+  }
+}
+
+createTables().then(() => {
+  app.listen(PORT, () => {
+    console.log(`🚀 PlayPay backend rodando na porta ${PORT}`);
+  });
 });
+
