@@ -9,7 +9,7 @@ import Button from '../components/Form/Button';
 const Signin: React.FC = () => {
   const navigate = useNavigate();
   const [currency, setCurrency] = useState('BRL');
-  const [email, setEmail] = useState('');
+  const [cpf, setCpf] = useState('');
   const [password, setPassword] = useState('');
 
   // animação do fundo (evita erro de tela branca)
@@ -38,7 +38,7 @@ const Signin: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ cpf, password }),
       });
 
       const data = await response.json();
@@ -77,18 +77,19 @@ const Signin: React.FC = () => {
         </p>
 
         <form onSubmit={handleSubmit} style={styles.form}>
-          <div style={styles.field}>
-            <label>Email</label>
-            <Input
-              tabIndex={1}
-              name="email"
-              type="email"
-              placeholder="Enter your email"
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setEmail(e.target.value)
-              }
-            />
-          </div>
+<div style={styles.field}>
+  <label>CPF</label>
+  <Input
+    tabIndex={1}
+    name="cpf"
+    type="text"
+    placeholder="Enter your CPF"
+    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+      setCpf(e.target.value)
+    }
+  />
+</div>
+
 
           <div style={styles.field}>
             <label>Password</label>

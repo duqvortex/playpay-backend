@@ -9,11 +9,19 @@ import Button from '../components/Form/Button';
 const Signup: React.FC = () => {
   const navigate = useNavigate();
   const [currency, setCurrency] = useState('BRL');
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
 
-  // animação de fundo
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    cpf: '',
+    address: '',
+    cep: '',
+    birth_date: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+  });
+
   useEffect(() => {
     const style = document.createElement('style');
     style.innerHTML = `
@@ -30,17 +38,33 @@ const Signup: React.FC = () => {
     };
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (
+    e: React.FormEvent
+  ): Promise<void> => {
     e.preventDefault();
 
+    if (form.password !== form.confirmPassword) {
+      alert('As senhas não coincidem');
+      return;
+    }
+
     try {
-      const response = await fetch('https://faithful-renewal-production.up.railway.app/api/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name, email, password }),
-      });
+      const response = await fetch(
+        'https://faithful-renewal-production.up.railway.app/api/register',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(form),
+        }
+      );
 
       const data = await response.json();
 
@@ -51,10 +75,10 @@ const Signup: React.FC = () => {
 
       alert('Conta criada com sucesso!');
 
-      // salva moeda escolhida
       localStorage.setItem('currency', currency);
 
       navigate('/', { replace: true });
+
     } catch (error) {
       alert('Erro ao conectar com o servidor');
       console.error(error);
@@ -71,42 +95,93 @@ const Signup: React.FC = () => {
         </p>
 
         <form onSubmit={handleSubmit} style={styles.form}>
+
           <div style={styles.field}>
             <label>Name</label>
             <Input
-              tabIndex={1}
               name="name"
               type="text"
-              placeholder="Enter your name"
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setName(e.target.value)
-              }
+              placeholder="Enter your full name"
+              onChange={handleChange}
             />
           </div>
 
           <div style={styles.field}>
             <label>Email</label>
             <Input
-              tabIndex={2}
               name="email"
               type="email"
               placeholder="Enter your email"
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setEmail(e.target.value)
-              }
+              onChange={handleChange}
+            />
+          </div>
+
+          <div style={styles.field}>
+            <label>CPF</label>
+            <Input
+              name="cpf"
+              type="text"
+              placeholder="Enter your CPF"
+              onChange={handleChange}
+            />
+          </div>
+
+          <div style={styles.field}>
+            <label>Endereço</label>
+            <Input
+              name="address"
+              type="text"
+              placeholder="Enter your address"
+              onChange={handleChange}
+            />
+          </div>
+
+          <div style={styles.field}>
+            <label>CEP</label>
+            <Input
+              name="cep"
+              type="text"
+              placeholder="Enter your CEP"
+              onChange={handleChange}
+            />
+          </div>
+
+          <div style={styles.field}>
+            <label>Data de Nascimento</label>
+            <Input
+              name="birth_date"
+              type="date"
+              onChange={handleChange}
+            />
+          </div>
+
+          <div style={styles.field}>
+            <label>Telefone</label>
+            <Input
+              name="phone"
+              type="text"
+              placeholder="Enter your phone number"
+              onChange={handleChange}
             />
           </div>
 
           <div style={styles.field}>
             <label>Password</label>
             <Input
-              tabIndex={3}
               name="password"
               type="password"
               placeholder="Create a password"
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setPassword(e.target.value)
-              }
+              onChange={handleChange}
+            />
+          </div>
+
+          <div style={styles.field}>
+            <label>Confirm Password</label>
+            <Input
+              name="confirmPassword"
+              type="password"
+              placeholder="Confirm your password"
+              onChange={handleChange}
             />
           </div>
 
@@ -114,7 +189,7 @@ const Signup: React.FC = () => {
             <label>Moeda</label>
             <select
               value={currency}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+              onChange={(e) =>
                 setCurrency(e.target.value)
               }
               style={styles.select}
@@ -126,15 +201,19 @@ const Signup: React.FC = () => {
           </div>
 
           <div style={styles.buttonWrap}>
-            <Button type="submit" text="Create account" tabIndex={0} />
+            <Button type="submit" text="Create account" />
           </div>
 
           <div style={styles.links}>
             <span>Já tem conta? </span>
-            <Link to="/" style={{ color: '#ff8c42', fontWeight: 700 }}>
+            <Link
+              to="/"
+              style={{ color: '#ff8c42', fontWeight: 700 }}
+            >
               Fazer login
             </Link>
           </div>
+
         </form>
       </div>
     </div>
@@ -144,7 +223,7 @@ const Signup: React.FC = () => {
 export default Signup;
 
 /* ===============================
-   🎨 ESTILO
+   🎨 ESTILO ORIGINAL PRESERVADO
 =============================== */
 
 const styles: any = {

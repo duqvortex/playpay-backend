@@ -7,15 +7,36 @@
 <body>
   <h2>Cadastro</h2>
 
-  <form id="registerForm">
-    <input type="text" id="name" placeholder="Nome" required />
-    <br><br>
-    <input type="email" id="email" placeholder="Email" required />
-    <br><br>
-    <input type="password" id="password" placeholder="Senha" required />
-    <br><br>
-    <button type="submit">Cadastrar</button>
-  </form>
+<form id="registerForm">
+  <input type="text" id="name" placeholder="Nome" required />
+  <br><br>
+
+  <!-- ADICIONE AQUI -->
+  <input type="text" id="cpf" placeholder="CPF" required />
+  <br><br>
+
+  <input type="text" id="phone" placeholder="Telefone" required />
+  <br><br>
+
+  <input type="date" id="birth_date" required />
+  <br><br>
+
+  <input type="text" id="address" placeholder="Endereço" required />
+  <br><br>
+
+  <input type="text" id="cep" placeholder="CEP" required />
+  <br><br>
+  <!-- FIM DA PARTE NOVA -->
+
+  <input type="email" id="email" placeholder="Email" required />
+  <br><br>
+
+  <input type="password" id="password" placeholder="Senha" required />
+  <br><br>
+
+  <button type="submit">Cadastrar</button>
+</form>
+
 
   <p id="msg"></p>
 
@@ -23,16 +44,32 @@
     document.getElementById('registerForm').addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const name = document.getElementById('name').value;
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
+const name = document.getElementById('name').value;
+const cpf = document.getElementById('cpf').value;
+const phone = document.getElementById('phone').value;
+const birth_date = document.getElementById('birth_date').value;
+const address = document.getElementById('address').value;
+const cep = document.getElementById('cep').value;
+const email = document.getElementById('email').value;
+const password = document.getElementById('password').value;
+
 
       const res = await fetch('https://faithful-renewal-production.up.railway.app/api/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ name, email, password })
+        body: JSON.stringify({
+  name,
+  email,
+  password,
+  cpf,
+  phone,
+  birth_date,
+  address,
+  cep
+})
+
       });
 
       const data = await res.json();

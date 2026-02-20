@@ -53,16 +53,18 @@ router.post('/deposit', authMiddleware, async (req, res) => {
 
     const user = userResult.rows[0];
 
-    const pagamento = await payment.create({
-      body: {
-        transaction_amount: Number(amount),
-        description: "Depósito PlayPay",
-        payment_method_id: "pix",
-        payer: {
-          email: user.email
-        }
-      }
-    });
+const pagamento = await payment.create({
+  body: {
+    transaction_amount: Number(amount),
+    description: "Depósito PlayPay",
+    payment_method_id: "pix",
+    external_reference: String(userId),
+    payer: {
+      email: user.email
+    }
+  }
+});
+
 
     const qrData =
       pagamento.point_of_interaction.transaction_data;
@@ -83,30 +85,84 @@ router.post('/deposit', authMiddleware, async (req, res) => {
 // REGISTER
 // ===========================
 router.post('/register', async (req, res) => {
-  const { name, email, password } = req.body;
+  const {
+    name,
+    email,
+    password,
+    confirmPassword,
+    cpf,
+    document_photo,
+    address,
+    cep,
+    birth_date,
+    phone
+  } = req.body;
 
   try {
-    if (!name || !email || !password) {
+
+    // 🔎 VALIDAÇÃO COMPLETA
+    if (
+      !name ||
+      !email ||
+      !password ||
+      !confirmPassword ||
+      !cpf ||
+      !address ||
+      !cep ||
+      !birth_date ||
+      !phone
+    ) {
       return res.status(400).json({ message: 'Todos os campos são obrigatórios' });
     }
 
-    // Verifica se já existe usuário
+    if (password !== confirmPassword) {
+      return res.status(400).json({ message: 'As senhas não coincidem' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ message: 'Senha deve ter no mínimo 6 caracteres' });
+    }
+
+    // 🔎 Verifica email
     const existingUser = await pool.query(
-      'SELECT * FROM users WHERE LOWER(email) = LOWER($1)',
-      [email]
+      'SELECT * FROM users WHERE cpf = $1',
+      [cpf]
     );
 
     if (existingUser.rows.length > 0) {
-      return res.status(400).json({ message: 'Email já cadastrado' });
+      return res.status(400).json({ message: 'cpf já cadastrado' });
+    }
+
+    // 🔎 Verifica CPF
+    const existingCpf = await pool.query(
+      'SELECT * FROM users WHERE cpf = $1',
+      [cpf]
+    );
+
+    if (existingCpf.rows.length > 0) {
+      return res.status(400).json({ message: 'CPF já cadastrado' });
     }
 
     // 🔐 CRIPTOGRAFAR SENHA
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Criar usuário
+    // ✅ Criar usuário completo
     const newUser = await pool.query(
-      'INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING *',
-      [name, email, hashedPassword]
+      `INSERT INTO users 
+      (name, email, password, cpf, document_photo, address, cep, birth_date, phone) 
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+      RETURNING *`,
+      [
+        name,
+        email,
+        hashedPassword,
+        cpf,
+        document_photo || null,
+        address,
+        cep,
+        birth_date,
+        phone
+      ]
     );
 
     const user = newUser.rows[0];
@@ -132,22 +188,26 @@ router.post('/register', async (req, res) => {
 // LOGIN
 // ===========================
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-
   try {
-    // Validação básica
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email e senha são obrigatórios' });
+    const { cpf, password } = req.body;
+
+    // 🔎 Validação básica
+    if (!cpf || !password) {
+      return res.status(400).json({ 
+        message: 'CPF e senha são obrigatórios' 
+      });
     }
 
-    // Busca usuário pelo email (case insensitive)
+    // 🔎 Buscar usuário pelo CPF
     const result = await pool.query(
-      'SELECT * FROM users WHERE LOWER(email) = LOWER($1)',
-      [email]
+      'SELECT * FROM users WHERE cpf = $1',
+      [cpf]
     );
 
     if (result.rows.length === 0) {
-      return res.status(400).json({ message: 'Usuário não encontrado' });
+      return res.status(400).json({ 
+        message: 'Usuário não encontrado' 
+      });
     }
 
     const user = result.rows[0];
@@ -156,10 +216,12 @@ router.post('/login', async (req, res) => {
     const validPassword = await bcrypt.compare(password, user.password);
 
     if (!validPassword) {
-      return res.status(400).json({ message: 'Senha incorreta' });
+      return res.status(400).json({ 
+        message: 'Senha incorreta' 
+      });
     }
 
-    // Buscar conta do usuário
+    // 💰 Buscar conta do usuário
     const accountResult = await pool.query(
       'SELECT * FROM accounts WHERE user_id = $1',
       [user.id]
@@ -167,24 +229,27 @@ router.post('/login', async (req, res) => {
 
     const account = accountResult.rows[0];
 
-    // Gerar token
+    // 🔑 Gerar token JWT
     const token = jwt.sign(
       { id: user.id },
       process.env.JWT_SECRET,
       { expiresIn: '1d' }
     );
 
+    // ✅ Retornar dados
     return res.json({
       token,
       id: user.id,
       name: user.name,
-      email: user.email,
+      cpf: user.cpf,
       balance: account?.balance || 0
     });
 
   } catch (error) {
     console.error('Erro no login:', error);
-    return res.status(500).json({ message: 'Erro interno do servidor' });
+    return res.status(500).json({ 
+      message: 'Erro interno do servidor' 
+    });
   }
 });
 
@@ -204,8 +269,8 @@ router.post('/transfer', authMiddleware, async (req, res) => {
     );
 
     const receiverResult = await pool.query(
-      'SELECT * FROM users WHERE LOWER(email) = LOWER($1)',
-      [toEmail]
+      'SELECT * FROM users WHERE cpf = $1cpf',
+      [tocpf]
     );
 
     const sender = senderResult.rows[0];

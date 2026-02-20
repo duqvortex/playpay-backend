@@ -1,19 +1,17 @@
-if (process.env.NODE_ENV !== 'production') {
-  require('dotenv').config();
-}
-
+require('dotenv').config();
 const express = require('express');
+const pool = require('./db');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const authMiddleware = require('./middleware/auth');
-
 
 const fundRoutes = require('./routes/funds');
 const apiRoutes = require('./routes/api');
 const pixRoutes = require('./routes/pix');
 
 const app = express();
-const pool = require('./db');
+
+console.log("Arquivo executado");
 
 /* ================================
    CONFIGURAÇÕES BÁSICAS
@@ -48,13 +46,23 @@ app.get('/test-db', async (req, res) => {
 
 app.post('/create-user', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, cpf, password } = req.body;
+
+    if (!cpf || !password) {
+      return res.status(400).json({ message: 'CPF e senha são obrigatórios' });
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    const user = await pool.query(
+      'INSERT INTO users (name, cpf, password) VALUES ($1, $2, $3) RETURNING id',
+      [name, cpf, hashedPassword]
+    );
+
+    // cria conta automaticamente
     await pool.query(
-      'INSERT INTO users (name, email, password) VALUES ($1, $2, $3)',
-      [name, email, hashedPassword]
+      'INSERT INTO accounts (user_id, balance) VALUES ($1, 0)',
+      [user.rows[0].id]
     );
 
     res.json({ message: 'Usuário criado com sucesso' });
@@ -65,6 +73,48 @@ app.post('/create-user', async (req, res) => {
   }
 });
 
+/* ================================
+   LOGIN
+================================ */
+
+app.post('/login', async (req, res) => {
+  try {
+    const { cpf, password } = req.body;
+
+    if (!cpf || !password) {
+      return res.status(400).json({
+        error: "CPF e senha são obrigatórios"
+      });
+    }
+
+    const result = await pool.query(
+      "SELECT * FROM users WHERE cpf = $1",
+      [cpf]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(400).json({
+        error: "Usuário não encontrado"
+      });
+    }
+
+    const user = result.rows[0];
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+
+    if (!passwordMatch) {
+      return res.status(400).json({
+        error: "Senha incorreta"
+      });
+    }
+
+    res.json({ message: "Login realizado com sucesso" });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erro no servidor" });
+  }
+});
 
 /* ================================
    CONSULTAR SALDO
@@ -87,9 +137,6 @@ app.get('/balance', authMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Erro ao buscar saldo' });
   }
 });
-
-
-
 
 /* ================================
    TRANSFERÊNCIA INTERNA
@@ -188,7 +235,7 @@ app.use((err, req, res, next) => {
 });
 
 /* ================================
-   INICIAR SERVIDOR
+   CRIAR TABELAS
 ================================ */
 
 async function createTables() {
@@ -197,7 +244,7 @@ async function createTables() {
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         name TEXT,
-        email TEXT UNIQUE,
+        cpf TEXT UNIQUE,
         password TEXT
       );
     `);
@@ -211,10 +258,15 @@ async function createTables() {
     `);
 
     console.log('Tabelas verificadas/criadas');
+
   } catch (err) {
     console.error('Erro ao criar tabelas:', err);
   }
 }
+
+/* ================================
+   INICIAR SERVIDOR
+================================ */
 
 const PORT = process.env.PORT || 3000;
 
@@ -223,4 +275,3 @@ createTables().then(() => {
     console.log(`🚀 PlayPay backend rodando na porta ${PORT}`);
   });
 });
-
