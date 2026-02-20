@@ -4,6 +4,9 @@ if (process.env.NODE_ENV !== 'production') {
 
 const express = require('express');
 const cors = require('cors');
+const bcrypt = require('bcrypt');
+const authMiddleware = require('./middleware/auth');
+
 
 const fundRoutes = require('./routes/funds');
 const apiRoutes = require('./routes/api');
@@ -44,27 +47,21 @@ app.get('/test-db', async (req, res) => {
 ================================ */
 
 app.post('/create-user', async (req, res) => {
-  const { name, email, password } = req.body;
-
   try {
-    const user = await pool.query(
-      'INSERT INTO users (name, email, password) VALUES ($1,$2,$3) RETURNING *',
-      [name, email, password]
+    const { name, email, password } = req.body;
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await pool.query(
+      'INSERT INTO users (name, email, password) VALUES ($1, $2, $3)',
+      [name, email, hashedPassword]
     );
 
-    const account = await pool.query(
-      'INSERT INTO accounts (user_id, balance) VALUES ($1, 0) RETURNING *',
-      [user.rows[0].id]
-    );
-
-    res.json({
-      message: 'Usuário criado',
-      user: user.rows[0],
-      account: account.rows[0]
-    });
+    res.json({ message: 'Usuário criado com sucesso' });
 
   } catch (err) {
-    res.status(500).json({ error: 'Erro ao criar usuário', details: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao criar usuário' });
   }
 });
 
@@ -73,16 +70,13 @@ app.post('/create-user', async (req, res) => {
    CONSULTAR SALDO
 ================================ */
 
-app.get('/balance/:userId', async (req, res) => {
-  const { userId } = req.params;
-
+app.get('/balance', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query(
       'SELECT balance FROM accounts WHERE user_id = $1',
-      [userId]
+      [req.user.id]
     );
 
-    // Se não existir conta, retorna saldo 0
     if (result.rows.length === 0) {
       return res.json({ balance: 0 });
     }
@@ -90,10 +84,11 @@ app.get('/balance/:userId', async (req, res) => {
     res.json({ balance: result.rows[0].balance });
 
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: 'Erro ao buscar saldo' });
   }
 });
+
+
 
 
 /* ================================
@@ -103,22 +98,34 @@ app.get('/balance/:userId', async (req, res) => {
 app.post('/transfer', async (req, res) => {
   const { fromUser, toUser, amount } = req.body;
 
+  if (!fromUser || !toUser || !amount) {
+    return res.status(400).json({ error: 'Dados inválidos' });
+  }
+
+  if (amount <= 0) {
+    return res.status(400).json({ error: 'Valor inválido' });
+  }
+
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN');
 
     const from = await client.query(
-      'SELECT * FROM accounts WHERE user_id = $1',
+      'SELECT * FROM accounts WHERE user_id = $1 FOR UPDATE',
       [fromUser]
     );
 
     const to = await client.query(
-      'SELECT * FROM accounts WHERE user_id = $1',
+      'SELECT * FROM accounts WHERE user_id = $1 FOR UPDATE',
       [toUser]
     );
 
-    if (from.rows[0].balance < amount) {
+    if (from.rows.length === 0 || to.rows.length === 0) {
+      throw new Error('Conta não encontrada');
+    }
+
+    if (Number(from.rows[0].balance) < Number(amount)) {
       throw new Error('Saldo insuficiente');
     }
 
@@ -134,7 +141,7 @@ app.post('/transfer', async (req, res) => {
 
     await client.query('COMMIT');
 
-    res.json({ message: 'Transferência realizada' });
+    res.json({ message: 'Transferência realizada com sucesso' });
 
   } catch (err) {
     await client.query('ROLLBACK');

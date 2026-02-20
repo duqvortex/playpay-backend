@@ -80,27 +80,52 @@ router.post('/deposit', authMiddleware, async (req, res) => {
 });
 
 // ===========================
-// CADASTRO
+// REGISTER
 // ===========================
 router.post('/register', async (req, res) => {
   const { name, email, password } = req.body;
 
   try {
-    const hashedPassword = await bcrypt.hash(password, 10);
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'Todos os campos são obrigatórios' });
+    }
 
-    await pool.query(
-      'INSERT INTO users (name, email, password, balance) VALUES ($1, $2, $3, $4)',
-      [name, email, hashedPassword, 0]
+    // Verifica se já existe usuário
+    const existingUser = await pool.query(
+      'SELECT * FROM users WHERE LOWER(email) = LOWER($1)',
+      [email]
     );
 
-    res.json({ message: 'Usuário criado com sucesso' });
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({ message: 'Email já cadastrado' });
+    }
 
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erro ao registrar usuário' });
+    // 🔐 CRIPTOGRAFAR SENHA
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Criar usuário
+    const newUser = await pool.query(
+      'INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING *',
+      [name, email, hashedPassword]
+    );
+
+    const user = newUser.rows[0];
+
+    // Criar conta vinculada
+    await pool.query(
+      'INSERT INTO accounts (user_id, balance) VALUES ($1, $2)',
+      [user.id, 0]
+    );
+
+    return res.status(201).json({
+      message: 'Usuário criado com sucesso'
+    });
+
+  } catch (error) {
+    console.error('Erro no cadastro:', error);
+    return res.status(500).json({ message: 'Erro interno do servidor' });
   }
 });
-
 
 
 // ===========================
@@ -110,15 +135,14 @@ router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // validação básica
+    // Validação básica
     if (!email || !password) {
       return res.status(400).json({ message: 'Email e senha são obrigatórios' });
     }
 
-
-    // busca usuário
+    // Busca usuário pelo email (case insensitive)
     const result = await pool.query(
-      'SELECT * FROM users WHERE email = $1',
+      'SELECT * FROM users WHERE LOWER(email) = LOWER($1)',
       [email]
     );
 
@@ -128,30 +152,34 @@ router.post('/login', async (req, res) => {
 
     const user = result.rows[0];
 
-    // valida senha
+    // 🔐 Comparar senha com hash
     const validPassword = await bcrypt.compare(password, user.password);
 
     if (!validPassword) {
       return res.status(400).json({ message: 'Senha incorreta' });
     }
 
-    // gera token usando .env
+    // Buscar conta do usuário
+    const accountResult = await pool.query(
+      'SELECT * FROM accounts WHERE user_id = $1',
+      [user.id]
+    );
+
+    const account = accountResult.rows[0];
+
+    // Gerar token
     const token = jwt.sign(
       { id: user.id },
       process.env.JWT_SECRET,
       { expiresIn: '1d' }
     );
 
-    // retorna dados necessários para o frontend
     return res.json({
       token,
       id: user.id,
       name: user.name,
       email: user.email,
-      balance: user.balance,
-      credit_score: user.credit_score,
-      credit_limit: user.credit_limit,
-      credit_used: user.credit_used
+      balance: account?.balance || 0
     });
 
   } catch (error) {
@@ -159,7 +187,6 @@ router.post('/login', async (req, res) => {
     return res.status(500).json({ message: 'Erro interno do servidor' });
   }
 });
-
 
 
 
@@ -177,7 +204,7 @@ router.post('/transfer', authMiddleware, async (req, res) => {
     );
 
     const receiverResult = await pool.query(
-      'SELECT * FROM users WHERE email = $1',
+      'SELECT * FROM users WHERE LOWER(email) = LOWER($1)',
       [toEmail]
     );
 
@@ -188,20 +215,27 @@ router.post('/transfer', authMiddleware, async (req, res) => {
       return res.status(400).json({ message: "Usuário não encontrado" });
     }
 
-    if (Number(sender.balance) < Number(amount)) {
+    const senderAccount = await pool.query(
+  'SELECT balance FROM accounts WHERE user_id = $1',
+  [fromId]
+);
+
+if (Number(senderAccount.rows[0].balance) < Number(amount)) {
+
       return res.status(400).json({ message: "Saldo insuficiente" });
     }
 
     // Atualiza saldos
-    await pool.query(
-      'UPDATE users SET balance = balance - $1 WHERE id = $2',
-      [amount, fromId]
-    );
+await pool.query(
+  'UPDATE accounts SET balance = balance - $1 WHERE user_id = $2',
+  [amount, fromId]
+);
 
-    await pool.query(
-      'UPDATE users SET balance = balance + $1 WHERE id = $2',
-      [amount, receiver.id]
-    );
+await pool.query(
+  'UPDATE accounts SET balance = balance + $1 WHERE user_id = $2',
+  [amount, receiver.id]
+);
+
 
     // Registra transação
     const transaction = await pool.query(
@@ -256,7 +290,7 @@ router.post('/add', authMiddleware, async (req, res) => {
 
   try {
     const result = await pool.query(
-      'UPDATE users SET balance = balance + $1 WHERE id = $2 RETURNING balance',
+      'UPDATE accounts SET balance = balance + $1 WHERE user_id = $2 RETURNING balance',
       [amount, userId]
     );
 
@@ -847,8 +881,8 @@ await pool.query(
 
         // debita
         await pool.query(
-          'UPDATE users SET balance = balance - $1 WHERE id = $2',
-          [inst.amount, inst.user_id]
+          'INSERT INTO users (name, email, password) VALUES ($1, $2, $3)',
+          [name, email, hashedPassword]
         );
 
         await pool.query(
