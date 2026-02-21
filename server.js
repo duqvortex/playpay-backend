@@ -12,6 +12,7 @@ const pixRoutes = require('./routes/pix');
 const app = express();
 
 console.log("Arquivo executado");
+console.log(process.env.DATABASE_URL);
 
 /* ================================
    CONFIGURAÇÕES BÁSICAS

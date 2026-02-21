@@ -91,7 +91,6 @@ router.post('/register', async (req, res) => {
     password,
     confirmPassword,
     cpf,
-    document_photo,
     address,
     cep,
     birth_date,
@@ -123,47 +122,50 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'Senha deve ter no mínimo 6 caracteres' });
     }
 
-    // 🔎 Verifica email
-    const existingUser = await pool.query(
-      'SELECT * FROM users WHERE cpf = $1',
-      [cpf]
-    );
+// 🔎 Verifica EMAIL
+const existingEmail = await pool.query(
+  'SELECT * FROM users WHERE email = $1',
+  [email]
+);
 
-    if (existingUser.rows.length > 0) {
-      return res.status(400).json({ message: 'cpf já cadastrado' });
-    }
+if (existingEmail.rows.length > 0) {
+  return res.status(400).json({ message: 'Email já cadastrado' });
+}
 
-    // 🔎 Verifica CPF
-    const existingCpf = await pool.query(
-      'SELECT * FROM users WHERE cpf = $1',
-      [cpf]
-    );
+// 🔎 Verifica CPF
+const existingCpf = await pool.query(
+  'SELECT * FROM users WHERE cpf = $1',
+  [cpf]
+);
 
-    if (existingCpf.rows.length > 0) {
-      return res.status(400).json({ message: 'CPF já cadastrado' });
-    }
+if (existingCpf.rows.length > 0) {
+  return res.status(400).json({ message: 'CPF já cadastrado' });
+}
 
     // 🔐 CRIPTOGRAFAR SENHA
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // ✅ Criar usuário completo
-    const newUser = await pool.query(
-      `INSERT INTO users 
-      (name, email, password, cpf, document_photo, address, cep, birth_date, phone) 
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-      RETURNING *`,
-      [
-        name,
-        email,
-        hashedPassword,
-        cpf,
-        document_photo || null,
-        address,
-        cep,
-        birth_date,
-        phone
-      ]
-    );
+    const formattedDate = new Date(birth_date)
+  .toISOString()
+  .split('T')[0];
+
+// ✅ Criar usuário completo
+const newUser = await pool.query(
+  `INSERT INTO users 
+  (name, email, password, cpf, address, cep, birth_date, phone) 
+  VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+  RETURNING *`,
+  [
+    name,
+    email,
+    hashedPassword,
+    cpf,
+    address,
+    cep,
+    formattedDate, // ← aqui usamos a data formatada
+    phone
+  ]
+);
 
     const user = newUser.rows[0];
 
@@ -259,66 +261,102 @@ router.post('/login', async (req, res) => {
 // ENVIAR DINHEIRO
 // ===========================
 router.post('/transfer', authMiddleware, async (req, res) => {
-  const { toEmail, amount } = req.body;
+  const { toCpf, amount } = req.body;
   const fromId = req.userId;
 
+  if (!toCpf || !amount) {
+    return res.status(400).json({ message: "CPF destino e valor são obrigatórios" });
+  }
+
+  const parsedAmount = Number(amount);
+
+  if (isNaN(parsedAmount) || parsedAmount <= 0) {
+    return res.status(400).json({ message: "Valor inválido" });
+  }
+
+  const client = await pool.connect();
+
   try {
-    const senderResult = await pool.query(
+    await client.query('BEGIN');
+
+    // 🔎 Buscar remetente
+    const senderResult = await client.query(
       'SELECT * FROM users WHERE id = $1',
       [fromId]
     );
 
-    const receiverResult = await pool.query(
-      'SELECT * FROM users WHERE cpf = $1cpf',
-      [tocpf]
-    );
-
-    const sender = senderResult.rows[0];
-    const receiver = receiverResult.rows[0];
-
-    if (!sender || !receiver) {
-      return res.status(400).json({ message: "Usuário não encontrado" });
+    if (senderResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ message: "Usuário remetente não encontrado" });
     }
 
-    const senderAccount = await pool.query(
-  'SELECT balance FROM accounts WHERE user_id = $1',
-  [fromId]
-);
+    // 🔎 Buscar destinatário pelo CPF
+    const receiverResult = await client.query(
+      'SELECT * FROM users WHERE cpf = $1',
+      [toCpf]
+    );
 
-if (Number(senderAccount.rows[0].balance) < Number(amount)) {
+    if (receiverResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ message: "Destinatário não encontrado" });
+    }
 
+    const receiver = receiverResult.rows[0];
+
+    if (receiver.id === fromId) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ message: "Você não pode transferir para si mesmo" });
+    }
+
+    // 🔎 Buscar conta do remetente
+    const senderAccount = await client.query(
+      'SELECT balance FROM accounts WHERE user_id = $1 FOR UPDATE',
+      [fromId]
+    );
+
+    const currentBalance = Number(senderAccount.rows[0].balance);
+
+    if (currentBalance < parsedAmount) {
+      await client.query('ROLLBACK');
       return res.status(400).json({ message: "Saldo insuficiente" });
     }
 
-    // Atualiza saldos
-await pool.query(
-  'UPDATE accounts SET balance = balance - $1 WHERE user_id = $2',
-  [amount, fromId]
-);
-
-await pool.query(
-  'UPDATE accounts SET balance = balance + $1 WHERE user_id = $2',
-  [amount, receiver.id]
-);
-
-
-    // Registra transação
-    const transaction = await pool.query(
-      'INSERT INTO transactions (id, from_user, to_user, amount, type) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [uuidv4(), fromId, receiver.id, amount, 'transfer']
+    // 💸 Debitar remetente
+    await client.query(
+      'UPDATE accounts SET balance = balance - $1 WHERE user_id = $2',
+      [parsedAmount, fromId]
     );
 
+    // 💰 Creditar destinatário
+    await client.query(
+      'UPDATE accounts SET balance = balance + $1 WHERE user_id = $2',
+      [parsedAmount, receiver.id]
+    );
+
+    // 📝 Registrar transação
+    const transaction = await client.query(
+      `INSERT INTO transactions 
+      (id, from_user, to_user, amount, type) 
+      VALUES ($1, $2, $3, $4, $5) 
+      RETURNING *`,
+      [uuidv4(), fromId, receiver.id, parsedAmount, 'transfer']
+    );
+
+    await client.query('COMMIT');
+
     res.json({
-      message: "Transferência realizada!",
+      message: "Transferência realizada com sucesso!",
       transaction: transaction.rows[0]
     });
 
   } catch (err) {
-    console.error(err);
+    await client.query('ROLLBACK');
+    console.error("Erro na transferência:", err);
     res.status(500).json({ message: "Erro no servidor" });
+  } finally {
+    client.release();
   }
 });
-
 // ===========================
 // SOLICITAR CRÉDITO
 // ===========================
@@ -945,10 +983,6 @@ await pool.query(
 );
 
         // debita
-        await pool.query(
-          'INSERT INTO users (name, email, password) VALUES ($1, $2, $3)',
-          [name, email, hashedPassword]
-        );
 
         await pool.query(
           'UPDATE installments SET status = $1 WHERE id = $2',
