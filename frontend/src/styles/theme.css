@@ -1,0 +1,123 @@
+:root {
+  --pp-bg-main: #0a0f1f;
+  --pp-bg-secondary: #0f172a;
+  --pp-card-bg: #111827;
+
+  --pp-orange: #ff6a00;
+  --pp-purple: #7c3aed;
+  --pp-cyan: #00f5ff;
+
+  --pp-text-main: #ffffff;
+  --pp-text-soft: #94a3b8;
+
+  --pp-glow-orange: 0 0 20px rgba(255,106,0,0.5);
+  --pp-glow-purple: 0 0 25px rgba(124,58,237,0.5);
+  --pp-glow-cyan: 0 0 20px rgba(0,245,255,0.5);
+}
+
+body {
+  background: radial-gradient(circle at top right, #111827, #0a0f1f);
+  color: var(--pp-text-main);
+  font-family: 'Poppins', sans-serif;
+}
+
+/* TITULOS */
+h1 {
+  font-size: 2.4rem;
+  font-weight: 700;
+  text-align: center;
+  background: linear-gradient(90deg, var(--pp-orange), var(--pp-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* CARD PADRÃO */
+.playpay-card {
+  background: var(--pp-card-bg);
+  border-radius: 22px;
+  padding: 25px;
+  border: 1px solid rgba(255,255,255,0.05);
+  box-shadow: var(--pp-glow-purple);
+  transition: 0.3s ease;
+}
+
+.playpay-card:hover {
+  transform: translateY(-5px);
+}
+
+/* BOTÃO PRINCIPAL */
+.playpay-primary-button {
+  padding: 14px 30px;
+  border-radius: 50px;
+  background: linear-gradient(135deg, var(--pp-orange), var(--pp-purple));
+  border: none;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  box-shadow: var(--pp-glow-orange);
+  transition: all 0.3s ease;
+}
+
+.playpay-primary-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 35px rgba(255,106,0,0.8);
+}
+
+/* ACTION BUTTONS */
+.actions a,
+.actions button {
+  width: 75px;
+  height: 75px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--pp-orange), var(--pp-cyan));
+  box-shadow: var(--pp-glow-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.3s ease;
+}
+
+.actions a:hover {
+  transform: scale(1.1);
+}
+
+/* HISTORY */
+.history {
+  background: var(--pp-bg-secondary);
+  border-radius: 20px;
+  padding: 20px;
+}
+
+.history-line {
+  padding: 15px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.history-line:last-child {
+  border-bottom: none;
+}
+
+/* MODAL */
+.playpay-modal {
+  position: fixed;
+  inset: 0;
+  backdrop-filter: blur(12px);
+  background: rgba(0,0,0,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.playpay-modal-box {
+  background: var(--pp-card-bg);
+  padding: 30px;
+  border-radius: 25px;
+  box-shadow: var(--pp-glow-purple);
+  width: 400px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}

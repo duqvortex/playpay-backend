@@ -1,0 +1,54 @@
+.playpay-features-wrapper {
+  background: #000;
+  min-height: 100vh;
+  padding: 40px 20px;
+  color: white;
+  font-family: 'Poppins', sans-serif;
+}
+
+.playpay-features-title {
+  text-align: center;
+  font-size: 32px;
+  margin-bottom: 50px;
+  color: #FFC83D;
+  text-shadow: 0 0 15px rgba(255,200,61,0.5);
+}
+
+.features-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 25px;
+}
+
+.feature-card {
+  background: #151515;
+  border-radius: 20px;
+  padding: 30px;
+  text-align: center;
+  border: 1px solid rgba(255,140,26,0.3);
+  transition: 0.3s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 0 30px rgba(255,140,26,0.5);
+  border: 1px solid #F26A0A;
+}
+
+.feature-icon {
+  font-size: 40px;
+  margin-bottom: 20px;
+}
+
+.feature-card h3 {
+  color: #FF8C1A;
+  margin-bottom: 15px;
+  font-size: 18px;
+}
+
+.feature-card p {
+  color: #ccc;
+  font-size: 14px;
+}

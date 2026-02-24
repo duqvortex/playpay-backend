@@ -1,0 +1,88 @@
+.playpay-inbox-wrapper {
+  background: #000000;
+  min-height: 100vh;
+  padding: 40px 20px;
+  color: white;
+  font-family: 'Poppins', sans-serif;
+}
+
+.playpay-inbox-title {
+  text-align: center;
+  font-size: 32px;
+  margin-bottom: 40px;
+  color: #FFC83D;
+  text-shadow: 0 0 12px rgba(255,200,61,0.4);
+}
+
+.playpay-inbox-container {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/* Card mensagem */
+.message-card {
+  background: #151515;
+  padding: 25px;
+  border-radius: 18px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(255,140,26,0.3);
+  transition: 0.3s ease;
+  position: relative;
+}
+
+.message-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0 25px rgba(255,140,26,0.4);
+}
+
+/* Mensagem não lida */
+.message-card.unread {
+  border: 1px solid #F26A0A;
+  box-shadow: 0 0 30px rgba(255,140,26,0.4);
+}
+
+/* Header */
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.message-header h3 {
+  color: #FF8C1A;
+  font-size: 18px;
+}
+
+/* Badge */
+.badge-unread {
+  background: linear-gradient(135deg, #F26A0A, #FFC83D);
+  color: black;
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-size: 12px;
+  font-weight: bold;
+  box-shadow: 0 0 15px rgba(255,200,61,0.5);
+}
+
+/* Descrição */
+.message-desc {
+  margin: 12px 0;
+  color: #dddddd;
+  font-size: 14px;
+}
+
+/* Data */
+.message-date {
+  font-size: 12px;
+  color: #777;
+}
+
+/* Estado vazio */
+.empty-state {
+  text-align: center;
+  padding: 60px;
+  background: #151515;
+  border-radius: 20px;
+  border: 1px solid #F26A0A;
+  box-shadow: 0 0 25px rgba(255,140,26,0.3);
+}

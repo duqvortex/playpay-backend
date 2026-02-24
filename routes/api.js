@@ -37,37 +37,40 @@ function authMiddleware(req, res, next) {
 // ===========================
 // ROTA DE DEPÓSITO VIA PIX
 // ===========================
+// ===========================
+// DEPÓSITO VIA PIX
+// ===========================
 router.post('/deposit', authMiddleware, async (req, res) => {
   const { amount } = req.body;
   const userId = req.userId;
 
+  if (!amount || amount <= 0) {
+    return res.status(400).json({ message: "Valor inválido" });
+  }
+
   try {
     const userResult = await pool.query(
-      'SELECT * FROM users WHERE id = $1',
+      'SELECT email FROM users WHERE id = $1',
       [userId]
     );
 
     if (userResult.rows.length === 0) {
-      return res.status(400).json({ message: "Usuário não encontrado" });
+      return res.status(404).json({ message: "Usuário não encontrado" });
     }
 
-    const user = userResult.rows[0];
+    const pagamento = await payment.create({
+      body: {
+        transaction_amount: Number(amount),
+        description: "Depósito PlayPay",
+        payment_method_id: "pix",
+        external_reference: String(userId),
+        payer: {
+          email: userResult.rows[0].email
+        }
+      }
+    });
 
-const pagamento = await payment.create({
-  body: {
-    transaction_amount: Number(amount),
-    description: "Depósito PlayPay",
-    payment_method_id: "pix",
-    external_reference: String(userId),
-    payer: {
-      email: user.email
-    }
-  }
-});
-
-
-    const qrData =
-      pagamento.point_of_interaction.transaction_data;
+    const qrData = pagamento.point_of_interaction.transaction_data;
 
     res.json({
       payment_id: pagamento.id,
@@ -80,6 +83,7 @@ const pagamento = await payment.create({
     res.status(500).json({ message: "Erro ao criar depósito" });
   }
 });
+
 
 // ===========================
 // REGISTER
@@ -111,15 +115,15 @@ router.post('/register', async (req, res) => {
       !birth_date ||
       !phone
     ) {
-      return res.status(400).json({ message: 'Todos os campos são obrigatórios' });
+      return res.status(404).json({ message: 'Todos os campos são obrigatórios' });
     }
 
     if (password !== confirmPassword) {
-      return res.status(400).json({ message: 'As senhas não coincidem' });
+      return res.status(404).json({ message: 'As senhas não coincidem' });
     }
 
     if (password.length < 6) {
-      return res.status(400).json({ message: 'Senha deve ter no mínimo 6 caracteres' });
+      return res.status(404).json({ message: 'Senha deve ter no mínimo 6 caracteres' });
     }
 
 // 🔎 Verifica EMAIL
@@ -129,7 +133,7 @@ const existingEmail = await pool.query(
 );
 
 if (existingEmail.rows.length > 0) {
-  return res.status(400).json({ message: 'Email já cadastrado' });
+  return res.status(404).json({ message: 'Email já cadastrado' });
 }
 
 // 🔎 Verifica CPF
@@ -139,7 +143,7 @@ const existingCpf = await pool.query(
 );
 
 if (existingCpf.rows.length > 0) {
-  return res.status(400).json({ message: 'CPF já cadastrado' });
+  return res.status(404).json({ message: 'CPF já cadastrado' });
 }
 
     // 🔐 CRIPTOGRAFAR SENHA
@@ -195,7 +199,7 @@ router.post('/login', async (req, res) => {
 
     // 🔎 Validação básica
     if (!cpf || !password) {
-      return res.status(400).json({ 
+      return res.status(404).json({ 
         message: 'CPF e senha são obrigatórios' 
       });
     }
@@ -207,7 +211,7 @@ router.post('/login', async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(400).json({ 
+      return res.status(404).json({ 
         message: 'Usuário não encontrado' 
       });
     }
@@ -218,7 +222,7 @@ router.post('/login', async (req, res) => {
     const validPassword = await bcrypt.compare(password, user.password);
 
     if (!validPassword) {
-      return res.status(400).json({ 
+      return res.status(404).json({ 
         message: 'Senha incorreta' 
       });
     }
@@ -265,13 +269,13 @@ router.post('/transfer', authMiddleware, async (req, res) => {
   const fromId = req.userId;
 
   if (!toCpf || !amount) {
-    return res.status(400).json({ message: "CPF destino e valor são obrigatórios" });
+    return res.status(404).json({ message: "CPF destino e valor são obrigatórios" });
   }
 
   const parsedAmount = Number(amount);
 
   if (isNaN(parsedAmount) || parsedAmount <= 0) {
-    return res.status(400).json({ message: "Valor inválido" });
+    return res.status(404).json({ message: "Valor inválido" });
   }
 
   const client = await pool.connect();
@@ -287,7 +291,7 @@ router.post('/transfer', authMiddleware, async (req, res) => {
 
     if (senderResult.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ message: "Usuário remetente não encontrado" });
+      return res.status(404).json({ message: "Usuário remetente não encontrado" });
     }
 
     // 🔎 Buscar destinatário pelo CPF
@@ -298,14 +302,14 @@ router.post('/transfer', authMiddleware, async (req, res) => {
 
     if (receiverResult.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ message: "Destinatário não encontrado" });
+      return res.status(404).json({ message: "Destinatário não encontrado" });
     }
 
     const receiver = receiverResult.rows[0];
 
     if (receiver.id === fromId) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ message: "Você não pode transferir para si mesmo" });
+      return res.status(404).json({ message: "Você não pode transferir para si mesmo" });
     }
 
     // 🔎 Buscar conta do remetente
@@ -318,7 +322,7 @@ router.post('/transfer', authMiddleware, async (req, res) => {
 
     if (currentBalance < parsedAmount) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ message: "Saldo insuficiente" });
+      return res.status(404).json({ message: "Saldo insuficiente" });
     }
 
     // 💸 Debitar remetente
@@ -398,7 +402,7 @@ router.post('/add', authMiddleware, async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(400).json({ message: "Usuário não encontrado" });
+      return res.status(404).json({ message: "Usuário não encontrado" });
     }
 
     await pool.query(
@@ -431,14 +435,14 @@ router.post('/credit-request', authMiddleware, async (req, res) => {
   }
 
   if (!amount || !installments || !startDate) {
-    return res.status(400).json({ message: 'Dados incompletos' });
+    return res.status(404).json({ message: 'Dados incompletos' });
   }
 
   const parsedAmount = Number(amount);
   const parsedInstallments = Number(installments);
 
   if (isNaN(parsedAmount) || isNaN(parsedInstallments)) {
-    return res.status(400).json({ message: 'Valores inválidos' });
+    return res.status(404).json({ message: 'Valores inválidos' });
   }
 
 
@@ -472,7 +476,7 @@ router.post('/credit-request', authMiddleware, async (req, res) => {
 
     if (amount > available) {
       await client.query('ROLLBACK');
-      return res.status(400).json({
+      return res.status(404).json({
         message: 'Limite insuficiente'
       });
     }
@@ -489,7 +493,7 @@ router.post('/credit-request', authMiddleware, async (req, res) => {
     } else if (user.credit_score >= 600) {
       status = 'approved';
       interest = 0.02;
-    } else if (user.credit_score >= 400) {
+    } else if (user.credit_score >= 404) {
       status = 'review';
       interest = 0.03;
     } else {
@@ -580,44 +584,48 @@ router.post('/withdraw', authMiddleware, async (req, res) => {
   const { amount } = req.body;
   const userId = req.userId;
 
+  if (!amount || amount <= 0) {
+    return res.status(400).json({ message: "Valor inválido" });
+  }
+
+  const client = await pool.connect();
+
   try {
-    // Buscar usuário
-    const userResult = await pool.query(
-      'SELECT * FROM users WHERE id = $1',
+    await client.query('BEGIN');
+
+    const account = await client.query(
+      'SELECT balance FROM accounts WHERE user_id = $1 FOR UPDATE',
       [userId]
     );
 
-    if (userResult.rows.length === 0) {
-      return res.status(400).json({ message: "Usuário não encontrado" });
+    if (account.rows.length === 0) {
+      throw new Error("Conta não encontrada");
     }
 
-    const user = userResult.rows[0];
-
-    // Verificar saldo
-    if (Number(user.balance) < Number(amount)) {
-      return res.status(400).json({ message: "Saldo insuficiente" });
+    if (Number(account.rows[0].balance) < Number(amount)) {
+      throw new Error("Saldo insuficiente");
     }
 
-    // Subtrair saldo
-    const update = await pool.query(
-      'UPDATE users SET balance = balance - $1 WHERE id = $2 RETURNING balance',
+    await client.query(
+      'UPDATE accounts SET balance = balance - $1 WHERE user_id = $2',
       [amount, userId]
     );
 
-    // Registrar transação
-    await pool.query(
-      'INSERT INTO transactions (id, from_user, amount, type) VALUES ($1, $2, $3, $4)',
-      [uuidv4(), userId, amount, 'withdraw']
+    await client.query(
+      `INSERT INTO transactions (id, from_user, amount, type, status)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [uuidv4(), userId, amount, 'withdraw', 'completed']
     );
 
-    res.json({
-      message: "Saque realizado com sucesso",
-      balance: update.rows[0].balance
-    });
+    await client.query('COMMIT');
+
+    res.json({ message: "Saque realizado com sucesso" });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Erro no servidor" });
+    await client.query('ROLLBACK');
+    res.status(400).json({ message: err.message });
+  } finally {
+    client.release();
   }
 });
 
@@ -628,59 +636,87 @@ router.post('/withdraw-pix', authMiddleware, async (req, res) => {
   const { amount, pixKey } = req.body;
   const userId = req.userId;
 
+  if (!amount || amount <= 0 || !pixKey) {
+    return res.status(400).json({ message: "Dados inválidos" });
+  }
+
+  const client = await pool.connect();
+
   try {
-    if (!amount || amount <= 0) {
-      return res.status(400).json({ message: "Valor inválido" });
-    }
+    await client.query('BEGIN');
 
-    if (!pixKey) {
-      return res.status(400).json({ message: "Chave PIX obrigatória" });
-    }
-
-    // Buscar usuário
-    const userResult = await pool.query(
-      'SELECT * FROM users WHERE id = $1',
+    const account = await client.query(
+      'SELECT balance FROM accounts WHERE user_id = $1 FOR UPDATE',
       [userId]
     );
 
-    if (userResult.rows.length === 0) {
-      return res.status(400).json({ message: "Usuário não encontrado" });
+    if (account.rows.length === 0) {
+      throw new Error("Conta não encontrada");
     }
 
-    const user = userResult.rows[0];
-
-    // Verificar saldo
-    if (Number(user.balance) < Number(amount)) {
-      return res.status(400).json({ message: "Saldo insuficiente" });
+    if (Number(account.rows[0].balance) < Number(amount)) {
+      throw new Error("Saldo insuficiente");
     }
 
-    // Descontar saldo
-    const update = await pool.query(
-      'UPDATE users SET balance = balance - $1 WHERE id = $2 RETURNING balance',
+    await client.query(
+      'UPDATE accounts SET balance = balance - $1 WHERE user_id = $2',
       [amount, userId]
     );
 
-    // Registrar transação PIX
-    const transaction = await pool.query(
+    const transaction = await client.query(
       `INSERT INTO transactions 
-      (id, from_user, amount, type, pix_key, status) 
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING *`,
+       (id, from_user, amount, type, pix_key, status)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
       [uuidv4(), userId, amount, 'withdraw_pix', pixKey, 'pending']
     );
 
+    await client.query('COMMIT');
 
     res.json({
-      message: "Saque via PIX solicitado com sucesso",
-      balance: update.rows[0].balance,
+      message: "Saque PIX solicitado",
       transaction: transaction.rows[0]
     });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Erro no servidor" });
+    await client.query('ROLLBACK');
+    res.status(400).json({ message: err.message });
+  } finally {
+    client.release();
   }
 });
+
+// ===========================
+// BUSCAR USUÁRIO + SALDO
+// ===========================
+router.get('/user/:id', authMiddleware, async (req, res) => {
+  const userId = req.params.id;
+
+  try {
+    const result = await pool.query(`
+      SELECT 
+        u.id,
+        u.name,
+        u.email,
+        u.avatar,
+        COALESCE(a.balance, 0) AS balance
+      FROM users u
+      LEFT JOIN accounts a ON a.user_id = u.id
+      WHERE u.id = $1
+    `, [userId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Usuário não encontrado" });
+    }
+
+    res.json(result.rows[0]);
+
+  } catch (err) {
+    console.error("Erro na rota /user/:id →", err);
+    res.status(500).json({ message: "Erro interno" });
+  }
+});
+
 
 
 // ===========================
@@ -689,27 +725,21 @@ router.post('/withdraw-pix', authMiddleware, async (req, res) => {
 router.get('/user/:id', async (req, res) => {
   try {
     const userResult = await pool.query(
-      'SELECT name, balance FROM users WHERE id = $1',
+      'SELECT name, balance FROM public.users WHERE id = $1',
       [req.params.id]
     );
 
     if (userResult.rows.length === 0) {
-      return res.status(400).json({ message: "Usuário não encontrado" });
+      return res.status(404).json({ message: "Usuário não encontrado" });
     }
-
-    const transactions = await pool.query(
-      'SELECT * FROM transactions WHERE from_user = $1 OR to_user = $1 ORDER BY created_at DESC',
-      [req.params.id]
-    );
 
     res.json({
       name: userResult.rows[0].name,
-      balance: userResult.rows[0].balance,
-      history: transactions.rows
+      balance: userResult.rows[0].balance
     });
 
   } catch (err) {
-    console.error(err);
+    console.error("Erro real:", err);
     res.status(500).json({ message: "Erro no servidor" });
   }
 });
@@ -729,7 +759,7 @@ router.post('/generate-card', async (req, res) => {
     );
 
     if (userResult.rows.length === 0) {
-      return res.status(400).json({ message: "Usuário não encontrado" });
+      return res.status(404).json({ message: "Usuário não encontrado" });
     }
 
     function generateCardNumber() {
@@ -794,7 +824,7 @@ router.post('/admin/approve', async (req, res) => {
     }
 
     if (tx.status !== 'pending') {
-      return res.status(400).json({ message: "Transação já processada" });
+      return res.status(404).json({ message: "Transação já processada" });
     }
 
     // Enviar PIX (simulado)
@@ -839,7 +869,7 @@ router.post('/admin/reject', async (req, res) => {
 
     // Devolver saldo
     await pool.query(
-      'UPDATE users SET balance = balance + $1 WHERE id = $2',
+      'UPDATE accounts SET balance = balance + $1 WHERE user_id = $2',
       [tx.amount, tx.from_user]
     );
 
@@ -876,12 +906,12 @@ router.post('/admin/approve-credit', async (req, res) => {
     }
 
     if (tx.status !== 'pending') {
-      return res.status(400).json({ message: "Já processada" });
+      return res.status(404).json({ message: "Já processada" });
     }
 
     // adicionar saldo
     await pool.query(
-      'UPDATE users SET balance = balance + $1 WHERE id = $2',
+      'UPDATE accounts SET balance = balance + $1 WHERE user_id = $2',
       [tx.amount, tx.from_user]
     );
 
@@ -969,7 +999,7 @@ async function processMonthlyDebits() {
 
     for (const inst of dueInstallments.rows) {
       const user = await pool.query(
-        'SELECT balance FROM users WHERE id = $1',
+        'SELECT balance FROM accounts WHERE user_id = $1',
         [inst.user_id]
       );
 
@@ -1059,7 +1089,7 @@ router.post("/webhook", async (req, res) => {
 
       // adicionar saldo
       await clientDb.query(
-        'UPDATE users SET balance = balance + $1 WHERE id = $2',
+        'UPDATE accounts SET balance = balance + $1 WHERE user_id = $2',
         [amount, userId]
       );
 
@@ -1093,6 +1123,69 @@ router.post("/webhook", async (req, res) => {
   } catch (err) {
     console.error("Erro no webhook:", err);
     res.sendStatus(500);
+  }
+});
+
+// ==========================
+// 🛒 MARKETPLACE
+// ==========================
+
+// Listar produtos
+router.get('/products', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM products ORDER BY id DESC'
+    );
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao buscar produtos' });
+  }
+});
+
+// Comprar produto
+router.post('/buy/:productId', authMiddleware, async (req, res) => {
+  const userId = req.userId;
+  const { productId } = req.params;
+
+  try {
+  const user = await pool.query(
+  'SELECT balance FROM accounts WHERE user_id = $1',
+  [userId]
+);
+
+    const product = await pool.query(
+      'SELECT price FROM products WHERE id = $1',
+      [productId]
+    );
+
+    if (!user.rows.length || !product.rows.length) {
+      return res.status(404).json({ error: 'Usuário ou produto não encontrado' });
+    }
+
+    if (Number(user.rows[0].balance) < Number(product.rows[0].price)) {
+      return res.status(404).json({ error: 'Saldo insuficiente' });
+    }
+
+    // desconta saldo
+    await pool.query(
+      'UPDATE accounts SET balance = balance - $1 WHERE user_id = $2',
+      [product.rows[0].price, userId]
+    );
+
+    // registra compra
+    await pool.query(
+      'INSERT INTO purchases (user_id, product_id) VALUES ($1, $2)',
+      [userId, productId]
+    );
+
+    res.json({ message: 'Compra realizada com sucesso' });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro interno no servidor' });
   }
 });
 

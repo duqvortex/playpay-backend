@@ -333,7 +333,7 @@ header .header-button span {
   border-radius: 50em;
 
   /* gradiente PlayPay */
-  background: linear-gradient(135deg, #ff5e00, #be284b, #7a00ff);
+  background: linear-gradient(135deg, #FFE278, #F26A0A, #000000);
 
   border: none;
   color: white;
@@ -449,10 +449,10 @@ header .header-button span {
   border-radius: 20px;
 
   /* fundo escuro */
-  background: linear-gradient(135deg, #b48608, #141414);
+  background: linear-gradient(135deg, #F26A0A, #141414);
 
   /* borda com estilo PlayPay */
-  border: 2px solid rgba(255, 102, 0, 0.6);
+  border: 2px solid rgba(198, 163, 9, 0.6);
 
   /* brilho interno */
   box-shadow:

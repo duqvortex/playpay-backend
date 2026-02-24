@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import './Transactions.css';
 
 // components
 import Card from '../components/Card/Card';
@@ -39,13 +40,11 @@ const Transactions: React.FC = () => {
       return;
     }
 
-    // saldo
     fetch(`https://faithful-renewal-production.up.railway.app/api/user/${userId}`)
       .then(res => res.json())
       .then(data => setBalance(data.balance || 0))
       .catch(() => setBalance(0));
 
-    // cartão
     fetch(`https://faithful-renewal-production.up.railway.app/api/card/${userId}`)
       .then(res => {
         if (!res.ok) throw new Error('Cartão não encontrado');
@@ -69,11 +68,9 @@ const Transactions: React.FC = () => {
           .catch(() => setLoading(false));
       });
 
-    // transações
     fetch(`https://faithful-renewal-production.up.railway.app/api/transactions/${userId}`)
       .then(res => res.json())
       .then(data => {
-        // garante que seja sempre um array
         if (Array.isArray(data)) {
           setTransactions(data);
         } else {
@@ -81,7 +78,6 @@ const Transactions: React.FC = () => {
         }
       })
       .catch(() => {
-        // fallback local
         setTransactions([
           { id: 1, description: 'Steam Purchase', amount: -50, date: '2026-01-10' },
           { id: 2, description: 'Game Reward', amount: 120, date: '2026-01-12' },
@@ -90,7 +86,6 @@ const Transactions: React.FC = () => {
       });
   }, []);
 
-  // 🔎 filtro em tempo real
   const filteredTransactions = useMemo(() => {
     if (!query) return transactions;
 
@@ -99,9 +94,6 @@ const Transactions: React.FC = () => {
     );
   }, [transactions, query]);
 
-  // ==========================
-  // RESPAWN
-  // ==========================
   const canRespawn = balance <= 0;
 
   const handleRespawn = async () => {
@@ -124,42 +116,22 @@ const Transactions: React.FC = () => {
     <Layout>
       <Divider />
 
-      <h1 className='title no-select'>Transactions</h1>
+      <h1 className='playpay-title no-select'>Transactions</h1>
 
-<div style={{ textAlign: 'center', marginTop: 20 }}>
-  <h3>Balance</h3>
-  <p style={{ fontSize: 22, fontWeight: 'bold' }}>
-    R$ {balance.toFixed(2)}
-  </p>
-</div>
+      <div className="playpay-balance-box">
+        <h3>Balance</h3>
+        <p className="playpay-balance-amount">
+          R$ {balance.toFixed(2)}
+        </p>
+      </div>
 
-
-      {/* CONTAINER DE RESPAWN */}
       {canRespawn && (
-        <div
-          style={{
-            background: '#0c0f14',
-            padding: 20,
-            borderRadius: 14,
-            margin: '20px',
-            textAlign: 'center',
-          }}
-        >
-          <p style={{ marginBottom: 10 }}>
-            You are out of money. Respawn to continue.
-          </p>
+        <div className="playpay-respawn-box">
+          <p>You are out of money. Respawn to continue.</p>
 
           <button
             onClick={handleRespawn}
-            style={{
-              padding: '10px 20px',
-              borderRadius: 8,
-              border: 'none',
-              background: '#4ade80',
-              color: '#000',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-            }}
+            className="playpay-respawn-btn"
           >
             Respawn
           </button>
@@ -168,31 +140,30 @@ const Transactions: React.FC = () => {
 
       <Divider />
 
-      {/* RESULTADOS DA BUSCA */}
-      <div style={{ padding: '0 20px' }}>
+      <div className="playpay-transactions-container">
         {query && (
-          <p style={{ opacity: 0.6, marginBottom: 10 }}>
+          <p className="playpay-search-label">
             Results for: "{query}"
           </p>
         )}
 
         {filteredTransactions.map(t => (
-          <div
-            key={t.id}
-            style={{
-              background: '#0c0f14',
-              padding: 14,
-              borderRadius: 12,
-              marginBottom: 10,
-            }}
-          >
+          <div key={t.id} className="playpay-transaction-card">
             <p>{t.description}</p>
-            <strong>{t.amount}</strong>
+            <strong
+              className={
+                t.amount >= 0
+                  ? 'amount-positive'
+                  : 'amount-negative'
+              }
+            >
+              {t.amount}
+            </strong>
           </div>
         ))}
 
         {filteredTransactions.length === 0 && (
-          <p>No results found</p>
+          <p className="playpay-empty">No results found</p>
         )}
       </div>
 

@@ -8,8 +8,12 @@ const authMiddleware = require('./middleware/auth');
 const fundRoutes = require('./routes/funds');
 const apiRoutes = require('./routes/api');
 const pixRoutes = require('./routes/pix');
+const gamerWalletRoutes = require('./routes/gamer/wallet');
+const gamerVaultRoutes = require('./routes/gamer/vault');
+const gamerXpRoutes = require('./routes/gamer/xp');
 
 const app = express();
+
 
 console.log("Arquivo executado");
 console.log(process.env.DATABASE_URL);
@@ -21,7 +25,13 @@ console.log(process.env.DATABASE_URL);
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
+app.use('/gamer', require('./routes/gamer/wallet'));
+app.use('/gamer', require('./routes/gamer/vault'));
+app.use('/gamer', require('./routes/gamer/xp'));
+app.use('/gamer', require('./routes/gamer/ranking'));
+app.use('/gamer', require('./routes/gamer/cashback'));
+app.use('/gamer', require('./routes/gamer/ranking'));
+app.use('/gamer', require('./routes/gamer/cashback'));
 /* ================================
    TESTE DO BANCO
 ================================ */
@@ -50,7 +60,7 @@ app.post('/create-user', async (req, res) => {
     const { name, cpf, password } = req.body;
 
     if (!cpf || !password) {
-      return res.status(400).json({ message: 'CPF e senha são obrigatórios' });
+      return res.status(404).json({ message: 'CPF e senha são obrigatórios' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -83,7 +93,7 @@ app.post('/login', async (req, res) => {
     const { cpf, password } = req.body;
 
     if (!cpf || !password) {
-      return res.status(400).json({
+      return res.status(404).json({
         error: "CPF e senha são obrigatórios"
       });
     }
@@ -94,7 +104,7 @@ app.post('/login', async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(400).json({
+      return res.status(404).json({
         error: "Usuário não encontrado"
       });
     }
@@ -104,7 +114,7 @@ app.post('/login', async (req, res) => {
     const passwordMatch = await bcrypt.compare(password, user.password);
 
     if (!passwordMatch) {
-      return res.status(400).json({
+      return res.status(404).json({
         error: "Senha incorreta"
       });
     }
@@ -143,15 +153,16 @@ app.get('/balance', authMiddleware, async (req, res) => {
    TRANSFERÊNCIA INTERNA
 ================================ */
 
-app.post('/transfer', async (req, res) => {
-  const { fromUser, toUser, amount } = req.body;
+app.post('/transfer', authMiddleware, async (req, res) => {
+  const { toUser, amount } = req.body;
+  const fromUser = req.user.id; // vem do token
 
-  if (!fromUser || !toUser || !amount) {
-    return res.status(400).json({ error: 'Dados inválidos' });
+  if (!toUser || !amount) {
+    return res.status(404).json({ error: 'Dados inválidos' });
   }
 
   if (amount <= 0) {
-    return res.status(400).json({ error: 'Valor inválido' });
+    return res.status(404).json({ error: 'Valor inválido' });
   }
 
   const client = await pool.connect();
@@ -178,7 +189,7 @@ app.post('/transfer', async (req, res) => {
     }
 
     await client.query(
-      'UPDATE accounts SET balance = balance - $1 WHERE user_id = $2',
+      'UPDATE accounts SET balance = balance + $1 WHERE user_id = $2',
       [amount, fromUser]
     );
 
@@ -193,7 +204,7 @@ app.post('/transfer', async (req, res) => {
 
   } catch (err) {
     await client.query('ROLLBACK');
-    res.status(400).json({ error: err.message });
+    res.status(404).json({ error: err.message });
   } finally {
     client.release();
   }
@@ -241,6 +252,26 @@ app.use((err, req, res, next) => {
 
 async function createTables() {
   try {
+        await pool.query(`
+      CREATE TABLE IF NOT EXISTS products (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT,
+        price NUMERIC NOT NULL,
+        image TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS purchases (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id),
+        product_id INTEGER REFERENCES products(id),
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -258,13 +289,46 @@ async function createTables() {
       );
     `);
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS gamer_wallet (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) UNIQUE,
+        gamer_balance NUMERIC DEFAULT 0,
+        xp INTEGER DEFAULT 0,
+        level INTEGER DEFAULT 1,
+        cashback NUMERIC DEFAULT 0
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS game_vaults (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id),
+        game_name TEXT,
+        target_price NUMERIC,
+        saved_amount NUMERIC DEFAULT 0,
+        is_completed BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS gamer_history (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id),
+        type TEXT,
+        amount NUMERIC,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
     console.log('Tabelas verificadas/criadas');
 
   } catch (err) {
     console.error('Erro ao criar tabelas:', err);
   }
 }
-
 /* ================================
    INICIAR SERVIDOR
 ================================ */

@@ -1,0 +1,107 @@
+.upgrade-wrapper {
+  min-height: 100vh;
+  background: #000000;
+  padding: 60px 20px;
+  color: white;
+  text-align: center;
+}
+
+.upgrade-title {
+  font-size: 36px;
+  color: #FFC83D;
+  margin-bottom: 10px;
+  text-shadow: 0 0 15px rgba(255,200,61,0.4);
+}
+
+.upgrade-subtitle {
+  color: #FF8C1A;
+  margin-bottom: 50px;
+}
+
+/* Container */
+.plans-container {
+  display: flex;
+  gap: 30px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Card Base */
+.plan-card {
+  background: #151515;
+  padding: 40px;
+  width: 320px;
+  border-radius: 20px;
+  border: 1px solid #F26A0A;
+  transition: 0.3s ease;
+  position: relative;
+}
+
+.plan-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 0 40px rgba(255,140,26,0.4);
+}
+
+.plan-card h2 {
+  color: #FFC83D;
+}
+
+.price {
+  font-size: 22px;
+  margin: 15px 0 25px;
+  color: #FF8C1A;
+}
+
+.plan-card ul {
+  list-style: none;
+  padding: 0;
+  text-align: left;
+  margin-bottom: 30px;
+}
+
+.plan-card li {
+  margin-bottom: 10px;
+  padding-left: 15px;
+  position: relative;
+}
+
+.plan-card li::before {
+  content: "🔥";
+  position: absolute;
+  left: 0;
+}
+
+/* Botão */
+.plan-card button {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  background: linear-gradient(135deg, #F26A0A, #FF8C1A);
+  color: white;
+  transition: 0.2s;
+}
+
+.plan-card button:hover {
+  background: linear-gradient(135deg, #FF8C1A, #FFC83D);
+}
+
+/* GOLD Highlight */
+.highlight {
+  border: 2px solid #FFC83D;
+  box-shadow: 0 0 50px rgba(255,200,61,0.5);
+}
+
+.badge {
+  position: absolute;
+  top: -15px;
+  right: 20px;
+  background: linear-gradient(135deg, #FFC83D, #FFE27A);
+  color: black;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+}

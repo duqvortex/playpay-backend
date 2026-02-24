@@ -1,0 +1,91 @@
+.playpay-title {
+  text-align: center;
+  font-size: 28px;
+  font-weight: 700;
+  margin: 20px 0;
+  color: #ffffff;
+}
+
+.playpay-balance-box {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.playpay-balance-box h3 {
+  opacity: 0.6;
+  font-weight: 500;
+}
+
+.playpay-balance-amount {
+  font-size: 28px;
+  font-weight: 700;
+  color: #4ade80;
+}
+
+.playpay-respawn-box {
+  background: linear-gradient(145deg, #11161f, #0c0f14);
+  padding: 24px;
+  border-radius: 16px;
+  margin: 20px;
+  text-align: center;
+  border: 1px solid rgba(74, 222, 128, 0.15);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.playpay-respawn-btn {
+  padding: 12px 24px;
+  border-radius: 10px;
+  border: none;
+  background: #4ade80;
+  color: #000;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.playpay-respawn-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(74, 222, 128, 0.4);
+}
+
+.playpay-transactions-container {
+  padding: 0 20px;
+}
+
+.playpay-search-label {
+  opacity: 0.5;
+  margin-bottom: 10px;
+}
+
+.playpay-transaction-card {
+  background: linear-gradient(145deg, #11161f, #0c0f14);
+  padding: 16px;
+  border-radius: 14px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s ease;
+}
+
+.playpay-transaction-card:hover {
+  transform: translateY(-3px);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.amount-positive {
+  color: #4ade80;
+  font-weight: 700;
+}
+
+.amount-negative {
+  color: #f87171;
+  font-weight: 700;
+}
+
+.playpay-empty {
+  opacity: 0.5;
+  text-align: center;
+  margin-top: 20px;
+}

@@ -7,7 +7,7 @@ exports.createFund = (req, res) => {
   const { userId, amount } = req.body;
 
   if (!userId) {
-    return res.status(400).json({
+    return res.status(404).json({
       error: 'userId é obrigatório'
     });
   }

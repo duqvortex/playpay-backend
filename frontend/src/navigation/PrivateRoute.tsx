@@ -6,9 +6,10 @@ interface Props {
 }
 
 const PrivateRoute: React.FC<Props> = ({ children }) => {
+  const token = localStorage.getItem('token');
   const userId = localStorage.getItem('userId');
 
-  if (!userId) {
+  if (!token || !userId) {
     return <Navigate to="/" replace />;
   }
 
