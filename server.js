@@ -276,6 +276,14 @@ app.get('/', (req, res) => {
   });
 });
 
+app.get('/pix-check', (req, res) => {
+  res.json({
+    ok: true,
+    route: '/pix-check',
+    version: 'server-js-atual'
+  });
+});
+
 /* ================================
    404
 ================================ */
