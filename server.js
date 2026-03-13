@@ -4,6 +4,7 @@ const pool = require('./db');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const authMiddleware = require('./middleware/auth');
+const axios = require('axios');
 
 const fundRoutes = require('./routes/funds');
 const apiRoutes = require('./routes/api');
@@ -153,62 +154,108 @@ app.get('/balance', authMiddleware, async (req, res) => {
    TRANSFERÊNCIA INTERNA
 ================================ */
 
-app.post('/transfer', authMiddleware, async (req, res) => {
-  const { toUser, amount } = req.body;
-  const fromUser = req.user.id; // vem do token
-
-  if (!toUser || !amount) {
-    return res.status(404).json({ error: 'Dados inválidos' });
-  }
-
-  if (amount <= 0) {
-    return res.status(404).json({ error: 'Valor inválido' });
-  }
-
-  const client = await pool.connect();
-
+app.post("/pix", async (req, res) => {
   try {
-    await client.query('BEGIN');
+    const { userId, amount } = req.body;
 
-    const from = await client.query(
-      'SELECT * FROM accounts WHERE user_id = $1 FOR UPDATE',
-      [fromUser]
-    );
-
-    const to = await client.query(
-      'SELECT * FROM accounts WHERE user_id = $1 FOR UPDATE',
-      [toUser]
-    );
-
-    if (from.rows.length === 0 || to.rows.length === 0) {
-      throw new Error('Conta não encontrada');
+    if (!userId || !amount || Number(amount) <= 0) {
+      return res.status(400).json({ error: "userId e amount são obrigatórios" });
     }
 
-    if (Number(from.rows[0].balance) < Number(amount)) {
-      throw new Error('Saldo insuficiente');
+    const userResult = await pool.query(
+      "SELECT id, name, cpf FROM users WHERE id = $1",
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: "Usuário não encontrado" });
     }
 
-    await client.query(
-      'UPDATE accounts SET balance = balance + $1 WHERE user_id = $2',
-      [amount, fromUser]
+    const user = userResult.rows[0];
+    const nome = user.name;
+    const cpf = user.cpf;
+
+    if (!cpf) {
+      return res.status(400).json({ error: "Usuário sem CPF cadastrado" });
+    }
+
+    let customerId;
+
+    const existing = await axios.get(
+      `https://api.asaas.com/v3/customers?cpfCnpj=${cpf}`,
+      {
+        headers: {
+          access_token: process.env.ASAAS_API_KEY,
+          "Content-Type": "application/json"
+        }
+      }
     );
 
-    await client.query(
-      'UPDATE accounts SET balance = balance + $1 WHERE user_id = $2',
-      [amount, toUser]
+    if (existing.data.data && existing.data.data.length > 0) {
+      customerId = existing.data.data[0].id;
+    } else {
+      const customer = await axios.post(
+        "https://api.asaas.com/v3/customers",
+        {
+          name: nome,
+          cpfCnpj: cpf
+        },
+        {
+          headers: {
+            access_token: process.env.ASAAS_API_KEY,
+            "Content-Type": "application/json"
+          }
+        }
+      );
+
+      customerId = customer.data.id;
+    }
+
+    const today = new Date();
+    const dueDate = today.toISOString().split("T")[0];
+
+    const payment = await axios.post(
+      "https://api.asaas.com/v3/payments",
+      {
+        customer: customerId,
+        billingType: "PIX",
+        value: Number(amount),
+        dueDate,
+        description: "Depósito PlayPay"
+      },
+      {
+        headers: {
+          access_token: process.env.ASAAS_API_KEY,
+          "Content-Type": "application/json"
+        }
+      }
     );
 
-    await client.query('COMMIT');
+    const pixQr = await axios.get(
+      `https://api.asaas.com/v3/payments/${payment.data.id}/pixQrCode`,
+      {
+        headers: {
+          access_token: process.env.ASAAS_API_KEY,
+          "Content-Type": "application/json"
+        }
+      }
+    );
 
-    res.json({ message: 'Transferência realizada com sucesso' });
+    return res.json({
+      success: true,
+      paymentId: payment.data.id,
+      qrCodeImage: `data:image/png;base64,${pixQr.data.encodedImage}`,
+      copiaECola: pixQr.data.payload
+    });
 
   } catch (err) {
-    await client.query('ROLLBACK');
-    res.status(404).json({ error: err.message });
-  } finally {
-    client.release();
+    console.error("Erro ao gerar PIX:", err.response?.data || err.message);
+    return res.status(500).json({
+      error: err.response?.data?.errors?.[0]?.description || "Erro ao gerar PIX"
+    });
   }
 });
+
 
 /* ================================
    OUTRAS ROTAS
